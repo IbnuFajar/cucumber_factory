@@ -39,6 +39,22 @@ Given there is a movie which is awesome, popular and successful but not science 
 And there is a director with the income "500000" but with the account balance "-30000"
 ```
 
+If you have many attribute assignments you can use doc string or data table:
+
+```cucumber
+Given there is a user with these attributes:
+  """
+  name: Jane
+  locked: true
+  """
+```
+
+```cucumber
+Given there is a user with these attributes:
+  | name   | Jane |
+  | locked | true |
+```
+
 
 Setting associations
 --------------------

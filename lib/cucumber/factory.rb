@@ -1,9 +1,10 @@
 require 'cucumber/factory/build_strategy'
+require 'cucumber/factory/multiline_parser'
 
 module Cucumber
   class Factory
 
-    ATTRIBUTES_PATTERN = '( with the .+?)?( (?:which|who|that) is .+?)?'
+    ATTRIBUTES_PATTERN = '( with the .+?)?( (?:which|who|that) is .+?)?( (?:with|and) these attributes:.*)?'
 
     NAMED_RECORDS_VARIABLE = :'@named_cucumber_factory_records'
 
@@ -14,16 +15,16 @@ module Cucumber
 
     NAMED_CREATION_STEP_DESCRIPTOR = {
       :kind => :Given,
-      :pattern => /^"([^\"]*)" is an? (.+?)( \(.+?\))?#{ATTRIBUTES_PATTERN}?$/,
+      :pattern => /^"([^\"]*)" is an? (.+?)( \(.+?\))?#{ATTRIBUTES_PATTERN}?$/m,
       # we cannot use vararg blocks here in Ruby 1.8, as explained by Aslak: http://www.ruby-forum.com/topic/182927
-      :block => lambda { |a1, a2, a3, a4, a5| Cucumber::Factory.send(:parse_named_creation, self, a1, a2, a3, a4, a5) }
+      :block => lambda { |a1, a2, a3, a4, a5, a6| Cucumber::Factory.send(:parse_named_creation, self, a1, a2, a3, a4, a5, a6) }
     }
 
     CREATION_STEP_DESCRIPTOR = {
       :kind => :Given,
-      :pattern => /^there is an? (.+?)( \(.+?\))?#{ATTRIBUTES_PATTERN}$/,
+      :pattern => /^there is an? (.+?)( \(.+?\))?#{ATTRIBUTES_PATTERN}$/m,
        # we cannot use vararg blocks here in Ruby 1.8, as explained by Aslak: http://www.ruby-forum.com/topic/182927
-      :block => lambda { |a1, a2, a3, a4| Cucumber::Factory.send(:parse_creation, self, a1, a2, a3, a4) }
+      :block => lambda { |a1, a2, a3, a4, a5| Cucumber::Factory.send(:parse_creation, self, a1, a2, a3, a4, a5) }
     }
 
     class << self
@@ -64,12 +65,12 @@ module Cucumber
         named_records(world)[name] = record
       end
   
-      def parse_named_creation(world, name, raw_model, raw_variant, raw_attributes, raw_boolean_attributes)
-        record = parse_creation(world, raw_model, raw_variant, raw_attributes, raw_boolean_attributes)
+      def parse_named_creation(world, name, raw_model, raw_variant, raw_attributes, raw_boolean_attributes, multiline_attributes)
+        record = parse_creation(world, raw_model, raw_variant, raw_attributes, raw_boolean_attributes, multiline_attributes)
         set_named_record(world, name, record)
       end
     
-      def parse_creation(world, raw_model, raw_variant, raw_attributes, raw_boolean_attributes)
+      def parse_creation(world, raw_model, raw_variant, raw_attributes, raw_boolean_attributes, multiline_attributes)
         build_strategy = BuildStrategy.from_prose(raw_model, raw_variant)
         model_class = build_strategy.model_class
         attributes = {}
@@ -88,6 +89,12 @@ module Cucumber
             attributes[attribute] = flag
           end
         end
+
+        if multiline_attributes.present?
+          multiline_parser = MultilineParser.new(multiline_attributes)
+          attributes = attributes.merge(multiline_parser.extract_attributes)
+        end
+
         record = build_strategy.create_record(attributes)
         remember_record_names(world, record, attributes)
         record

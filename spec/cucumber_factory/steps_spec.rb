@@ -282,4 +282,58 @@ describe 'steps provided by cucumber_factory' do
     invoke_cucumber_step('there is a plain ruby class with the butt "pear-shaped"')
   end
 
+  it "should should allow to set attributes via doc string" do
+    user = User.new
+    User.stub(:new => user)
+
+    invoke_cucumber_step(<<-DOC_STRING)
+there is a user with these attributes:
+  name: Jane
+  locked: true
+    DOC_STRING
+
+    user.name.should == "Jane"
+    user.locked.should == true
+  end
+
+  it "should should allow to set attributes via additional doc string" do
+    user = User.new
+    User.stub(:new => user)
+
+    invoke_cucumber_step(<<-DOC_STRING)
+there is a user with the email "test@invalid.com" and these attributes:
+  name: Jane
+    DOC_STRING
+
+    user.name.should == "Jane"
+    user.email.should == "test@invalid.com"
+  end
+
+  it "should should allow to set attributes via data table" do
+    user = User.new
+    User.stub(:new => user)
+
+    invoke_cucumber_step(<<-DATA_TABLE)
+there is a user with these attributes:
+  | name   | Jane |
+  | locked | true |
+    DATA_TABLE
+
+    user.name.should == "Jane"
+    user.locked.should == true
+  end
+
+  it "should should allow to set attributes via additional data table" do
+    user = User.new
+    User.stub(:new => user)
+
+    invoke_cucumber_step(<<-DATA_TABLE)
+there is a user with the email "test@invalid.com" and these attributes:
+  | name | Jane |
+    DATA_TABLE
+
+    user.name.should == "Jane"
+    user.email.should == "test@invalid.com"
+  end
+
 end
